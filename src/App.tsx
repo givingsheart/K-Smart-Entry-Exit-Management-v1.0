@@ -201,41 +201,38 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#0a0a0b] text-zinc-100 font-sans selection:bg-blue-500/30">
       {/* Top Navigation */}
-      <header className="sticky top-0 z-40 w-full bg-black/60 backdrop-blur-xl border-b border-white/5 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="bg-white p-1.5 rounded-lg shadow-lg">
-              <svg viewBox="0 0 100 100" className="w-8 h-8 fill-black">
+      <header className="sticky top-0 z-40 w-full bg-black/60 backdrop-blur-xl border-b border-white/5 px-4 py-3">
+        <div className="max-w-[500px] mx-auto space-y-3">
+          {/* Row 1: Service Name */}
+          <div className="flex items-center gap-3">
+            <div className="bg-white p-1 rounded shadow-lg">
+              <svg viewBox="0 0 100 100" className="w-5 h-5 fill-black">
                 <path d="M50 0 L100 86.6 L0 86.6 Z" />
                 <path d="M50 100 L0 13.4 L100 13.4 Z" />
                 <circle cx="50" cy="50" r="15" />
               </svg>
             </div>
-            <div>
-              <h1 className="text-lg font-black tracking-tighter uppercase text-white leading-none">한성SVC & HDC랩스</h1>
-              <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mt-1">스마트 입출차 관리 시스템</p>
-            </div>
+            <h1 className="text-base font-black tracking-tighter uppercase text-white leading-none">스마트입출차관리v1.0 (한성SVC)</h1>
           </div>
 
-          <div className="flex items-center gap-8">
+          {/* Row 2: Clock, Actions */}
+          <div className="flex items-center justify-between">
             <Clock />
-            <div className="h-8 w-px bg-white/10 hidden sm:block" />
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button 
                 onClick={() => setIsResManagerOpen(true)}
-                className="flex items-center gap-3 bg-white/5 hover:bg-white/10 px-6 py-3 rounded-2xl border border-white/10 transition-all active:scale-95 group"
+                className="flex items-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 px-3 py-2 rounded-xl border border-blue-500/30 transition-all active:scale-95"
               >
-                <ClipboardList className="w-6 h-6 text-blue-400 group-hover:scale-110 transition-transform" />
-                <span className="font-black text-white hidden sm:inline">예약 차량 관리</span>
+                <ClipboardList className="w-4 h-4 text-blue-400" />
+                <span className="font-black text-xs text-white">예약 관리</span>
               </button>
 
               <button 
                 onClick={() => setIsSetupOpen(true)}
-                className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-all active:scale-95 group"
-                title="설정"
+                className="p-2 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 transition-all active:scale-95"
               >
-                <Settings className="w-6 h-6 text-zinc-500 group-hover:text-white" />
+                <Settings className="w-5 h-5 text-zinc-400" />
               </button>
             </div>
           </div>
@@ -275,18 +272,31 @@ export default function App() {
         </AnimatePresence>
 
         <section className="flex flex-col gap-8">
-          {/* Scanning Section */}
-          <div className="space-y-6">
+          {/* Scanning Section - Larger for mobile visibility */}
+          <div className="space-y-4">
             <div className="flex items-center justify-between px-2">
               <h2 className="text-xl font-black text-white flex items-center gap-3">
                 <Smartphone className="w-6 h-6 text-blue-500" />
                 번호판 촬영 인식
               </h2>
             </div>
-            <Scanner onScan={handleScan} isProcessing={isScanning} apiKey={apiKey} isTestMode={isTestMode} />
+            <div className="w-full">
+              <Scanner onScan={handleScan} isProcessing={isScanning} apiKey={apiKey} isTestMode={isTestMode} />
+            </div>
           </div>
 
-          {/* Stats */}
+          {/* Manual Entry First */}
+          <div className="px-2">
+            <button 
+              onClick={() => setIsManualEntryOpen(true)}
+              className="w-full flex items-center justify-center gap-4 bg-zinc-800 hover:bg-zinc-700 py-6 rounded-[1.5rem] transition-all active:scale-95 group border border-white/5 shadow-lg"
+            >
+              <Settings className="w-6 h-6 text-zinc-500 group-hover:rotate-90 transition-transform duration-500" />
+              <span className="text-lg font-black text-zinc-300">수동 번호 입력</span>
+            </button>
+          </div>
+
+          {/* Stats moved below manual entry */}
           <div className="space-y-4">
              <h2 className="text-xl font-black text-white flex items-center gap-3 px-2">
               <LayoutDashboard className="w-6 h-6 text-blue-500" />
@@ -309,22 +319,6 @@ export default function App() {
                   <span className="text-zinc-500 text-sm font-bold">대</span>
                 </div>
               </div>
-              
-              <button 
-                onClick={() => setIsManualEntryOpen(true)}
-                className="col-span-2 flex items-center justify-center gap-4 bg-zinc-800 hover:bg-zinc-700 py-6 rounded-[1.5rem] transition-all active:scale-95 group border border-white/5 shadow-lg"
-              >
-                <Settings className="w-6 h-6 text-zinc-500 group-hover:rotate-90 transition-transform duration-500" />
-                <span className="text-lg font-black text-zinc-300">수동 번호 입력</span>
-              </button>
-              
-              <button 
-                onClick={() => setIsResManagerOpen(true)}
-                className="col-span-2 flex items-center justify-center gap-4 bg-blue-600 hover:bg-blue-500 py-6 rounded-[1.5rem] text-white font-black text-lg active:scale-95 shadow-xl shadow-blue-900/20"
-              >
-                <ClipboardList className="w-6 h-6" />
-                예약 명단 관리
-              </button>
             </div>
           </div>
         </section>

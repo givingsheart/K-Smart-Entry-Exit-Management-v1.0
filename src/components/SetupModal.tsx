@@ -38,7 +38,7 @@ export default function SetupModal({ isOpen, onSave, initialKey = '', initialTes
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-lg bg-zinc-900 border border-white/10 rounded-[3rem] shadow-2xl p-10 overflow-hidden"
+            className="relative w-full max-w-lg bg-zinc-900 border border-white/10 rounded-[3rem] shadow-2xl p-8 max-h-[90vh] overflow-y-auto"
           >
             <div className="text-center mb-10">
               <div className="bg-blue-600/20 w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-blue-500/30">
