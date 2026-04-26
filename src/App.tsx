@@ -23,6 +23,7 @@ import RecordTable from './components/RecordTable';
 import DetailModal from './components/DetailModal';
 import SetupModal from './components/SetupModal';
 import ManualEntryModal from './components/ManualEntryModal';
+import ConfirmModal from './components/ConfirmModal';
 import { Reservation, EntryRecord, EntryType } from './types';
 
 const STORAGE_KEY = 'benz_smart_parking_state_v2';
@@ -63,6 +64,20 @@ export default function App() {
   
   const [editingRecord, setEditingRecord] = useState<EntryRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Confirm Modal states
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isDanger?: boolean;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
   
   const [reservationAlert, setReservationAlert] = useState<{ plate: string; time?: string } | null>(null);
 
@@ -163,20 +178,31 @@ export default function App() {
   };
 
   const handleExitRecord = (record: EntryRecord) => {
-    if (window.confirm(`${record.plateNumber} 차량의 출차 처리를 하시겠습니까?`)) {
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
-      handleSaveRecord(record.id, { exitTime: timeStr });
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: "출차 처리 확인",
+      message: `${record.plateNumber} 차량의 출차 처리를 하시겠습니까?`,
+      onConfirm: () => {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+        handleSaveRecord(record.id, { exitTime: timeStr });
+      }
+    });
   };
 
   const handleFullReset = () => {
-    if (window.confirm("⚠️ 시스템 전체 초기화 (경고)\n\n[예약 명단]과 [오늘의 입출차 기록]이 모두 삭제됩니다.\n전날 데이터를 지우고 새로 시작하시겠습니까?")) {
-      setReservations([]);
-      setRecords([]);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ reservations: [], records: [], apiKey, isTestMode }));
-      alert("모든 데이터가 성공적으로 초기화되었습니다.");
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: "⚠️ 시스템 전체 초기화 (경고)",
+      message: "[예약 명단]과 [오늘의 입출차 기록]이 모두 삭제됩니다.\n전날 데이터를 지우고 새로 시작하시겠습니까?",
+      isDanger: true,
+      onConfirm: () => {
+        setReservations([]);
+        setRecords([]);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ reservations: [], records: [], apiKey, isTestMode }));
+        alert("모든 데이터가 성공적으로 초기화되었습니다.");
+      }
+    });
   };
 
   const exportToCSV = () => {
@@ -249,7 +275,7 @@ export default function App() {
 
               <button 
                 type="button"
-                onClick={() => handleFullReset()}
+                onClick={handleFullReset}
                 className="p-2 bg-red-500/10 hover:bg-red-500/20 rounded-xl border border-red-500/20 transition-all active:scale-95 group"
                 title="기록/명단 초기화"
               >
@@ -369,10 +395,16 @@ export default function App() {
               </button>
               <button 
                 onClick={() => {
-                  if (confirm("오늘의 모든 기록을 삭제하시겠습니까? (예약 명단은 유지됩니다)")) {
-                    setRecords([]);
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify({ reservations, records: [], apiKey }));
-                  }
+                  setConfirmConfig({
+                    isOpen: true,
+                    title: "기록 삭제 확인",
+                    message: "오늘의 모든 기록을 삭제하시겠습니까? (예약 명단은 유지됩니다)",
+                    isDanger: true,
+                    onConfirm: () => {
+                      setRecords([]);
+                      localStorage.setItem(STORAGE_KEY, JSON.stringify({ reservations, records: [], apiKey }));
+                    }
+                  });
                 }}
                 className="text-xs font-bold text-zinc-600 hover:text-red-500 transition-colors uppercase tracking-widest pl-2"
               >
@@ -423,6 +455,15 @@ export default function App() {
         isOpen={isManualEntryOpen}
         onClose={() => setIsManualEntryOpen(false)}
         onConfirm={handleScan}
+      />
+
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        onConfirm={confirmConfig.onConfirm}
+        onClose={() => setConfirmConfig({ ...confirmConfig, isOpen: false })}
+        isDanger={confirmConfig.isDanger}
       />
     </div>
   );

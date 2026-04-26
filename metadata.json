@@ -1,6 +1,6 @@
 {
-  "name": "스마트입출차관리v1.0",
-  "description": "경비원분들을 위한 AI 기반 스마트 차량 입출차 관리 시스템 (HDC랩스/한성SVC 전용 v1.0)",
+  "name": "스마트입출차관리(HDC랩스)",
+  "description": "경비원분들을 위한 AI 기반 스마트 차량 입출차 관리 시스템 (HDC랩스 전용)",
   "requestFramePermissions": [
     "camera"
   ],

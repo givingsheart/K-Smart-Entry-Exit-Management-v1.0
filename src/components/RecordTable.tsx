@@ -84,18 +84,18 @@ export default function RecordTable({ records, onMemoClick, onExitClick }: Props
                     {!record.exitTime && onExitClick && (
                       <button 
                         onClick={() => onExitClick(record)}
-                        className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-xl transition-all active:scale-95 border border-red-400"
+                        className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg transition-all active:scale-95 border border-red-400 shadow-sm"
                       >
-                        <LogOut className="w-5 h-5" />
-                        <span className="font-bold">출차처리</span>
+                        <LogOut className="w-4 h-4" />
+                        <span className="font-bold text-xs">출차</span>
                       </button>
                     )}
                     <button 
                       onClick={() => onMemoClick(record)}
-                      className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-4 py-2 rounded-xl transition-all active:scale-95 border border-white/5"
+                      className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1.5 rounded-lg transition-all active:scale-95 border border-white/5"
                     >
-                      <FileText className="w-5 h-5" />
-                      <span className="font-bold">수정</span>
+                      <FileText className="w-4 h-4" />
+                      <span className="font-bold text-xs">수정</span>
                     </button>
                   </div>
                 </td>
