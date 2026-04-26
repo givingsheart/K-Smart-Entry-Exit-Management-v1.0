@@ -4,18 +4,19 @@
  */
 
 import { useState } from 'react';
-import { Key, ShieldCheck, ArrowRight, ExternalLink } from 'lucide-react';
+import { Key, ShieldCheck, ArrowRight, ExternalLink, Trash2, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface Props {
   isOpen: boolean;
   onSave: (key: string, isTestMode: boolean) => void;
+  onReset?: () => void;
   initialKey?: string;
   initialTestMode?: boolean;
   isMandatory?: boolean;
 }
 
-export default function SetupModal({ isOpen, onSave, initialKey = '', initialTestMode = false, isMandatory = false }: Props) {
+export default function SetupModal({ isOpen, onSave, onReset, initialKey = '', initialTestMode = false, isMandatory = false }: Props) {
   const [key, setKey] = useState(initialKey);
   const [testMode, setTestMode] = useState(initialTestMode);
 
@@ -91,6 +92,19 @@ export default function SetupModal({ isOpen, onSave, initialKey = '', initialTes
                   <li>50~66세 경비원분들을 위해 버튼과 글자를 크게 설계했습니다.</li>
                 </ul>
               </div>
+
+              {onReset && (
+                <div className="pt-4 border-t border-white/5">
+                  <button
+                    onClick={onReset}
+                    className="w-full py-4 rounded-xl border border-red-500/20 bg-red-500/5 text-red-500 font-bold hover:bg-red-500/10 transition-all flex items-center justify-center gap-2"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    모든 데이터 초기화 (명단/기록 전체 삭제)
+                  </button>
+                  <p className="text-[10px] text-zinc-600 font-medium mt-2 text-center">전날 명단과 모든 기록을 한 번에 지우고 새로 시작할 때 사용하세요.</p>
+                </div>
+              )}
 
               <button
                 onClick={handleSave}

@@ -12,7 +12,8 @@ import {
   Smartphone,
   ChevronRight,
   ClipboardList,
-  History
+  History,
+  RotateCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Clock from './components/Clock';
@@ -161,6 +162,23 @@ export default function App() {
     setRecords(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
   };
 
+  const handleExitRecord = (record: EntryRecord) => {
+    if (window.confirm(`${record.plateNumber} 차량의 출차 처리를 하시겠습니까?`)) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+      handleSaveRecord(record.id, { exitTime: timeStr });
+    }
+  };
+
+  const handleFullReset = () => {
+    if (window.confirm("⚠️ 시스템 전체 초기화 (경고)\n\n[예약 명단]과 [오늘의 입출차 기록]이 모두 삭제됩니다.\n전날 데이터를 지우고 새로 시작하시겠습니까?")) {
+      setReservations([]);
+      setRecords([]);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ reservations: [], records: [], apiKey, isTestMode }));
+      alert("모든 데이터가 성공적으로 초기화되었습니다.");
+    }
+  };
+
   const exportToCSV = () => {
     if (records.length === 0) {
       alert("내보낼 기록이 없습니다.");
@@ -212,27 +230,38 @@ export default function App() {
                 <circle cx="50" cy="50" r="15" />
               </svg>
             </div>
-            <h1 className="text-base font-black tracking-tighter uppercase text-white leading-none">스마트입출차관리v1.0 (한성SVC)</h1>
+            <h1 className="text-base font-black tracking-tighter uppercase text-white leading-none">스마트입출차관리(HDC랩스)</h1>
           </div>
 
           {/* Row 2: Clock, Actions */}
           <div className="flex items-center justify-between">
             <Clock />
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <button 
+                type="button"
                 onClick={() => setIsResManagerOpen(true)}
-                className="flex items-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 px-3 py-2 rounded-xl border border-blue-500/30 transition-all active:scale-95"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded-xl border border-blue-400 shadow-lg shadow-blue-900/30 transition-all active:scale-95"
               >
-                <ClipboardList className="w-4 h-4 text-blue-400" />
-                <span className="font-black text-xs text-white">예약 관리</span>
+                <ClipboardList className="w-4 h-4 text-white" />
+                <span className="font-black text-[11px] text-white">명단 관리</span>
               </button>
 
               <button 
+                type="button"
+                onClick={() => handleFullReset()}
+                className="p-2 bg-red-500/10 hover:bg-red-500/20 rounded-xl border border-red-500/20 transition-all active:scale-95 group"
+                title="기록/명단 초기화"
+              >
+                <RotateCcw className="w-4 h-4 text-red-500 group-hover:rotate-[-120deg] transition-transform duration-500" />
+              </button>
+
+              <button 
+                type="button"
                 onClick={() => setIsSetupOpen(true)}
                 className="p-2 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 transition-all active:scale-95"
               >
-                <Settings className="w-5 h-5 text-zinc-400" />
+                <Settings className="w-4 h-4 text-zinc-400" />
               </button>
             </div>
           </div>
@@ -330,13 +359,13 @@ export default function App() {
               <History className="w-6 h-6 text-blue-500" />
               오늘의 입출차 기록
             </h2>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               <button 
                 onClick={exportToCSV}
-                className="text-xs font-black text-blue-500 hover:text-blue-400 transition-colors uppercase tracking-widest flex items-center gap-1 border border-blue-500/20 px-3 py-2 rounded-xl bg-blue-500/5 hover:bg-blue-500/10"
+                className="text-sm font-black text-white bg-blue-600 hover:bg-blue-500 transition-all uppercase tracking-tight flex items-center gap-2 border border-blue-400 px-4 py-3 rounded-2xl shadow-xl shadow-blue-900/20 active:scale-95"
               >
-                <ClipboardList className="w-4 h-4" />
-                장부 저장
+                <ClipboardList className="w-5 h-5" />
+                마감/장부저장
               </button>
               <button 
                 onClick={() => {
@@ -345,7 +374,7 @@ export default function App() {
                     localStorage.setItem(STORAGE_KEY, JSON.stringify({ reservations, records: [], apiKey }));
                   }
                 }}
-                className="text-xs font-bold text-zinc-600 hover:text-red-500 transition-colors uppercase tracking-widest"
+                className="text-xs font-bold text-zinc-600 hover:text-red-500 transition-colors uppercase tracking-widest pl-2"
               >
                 기록 삭제
               </button>
@@ -357,6 +386,7 @@ export default function App() {
               setEditingRecord(record);
               setIsModalOpen(true);
             }} 
+            onExitClick={handleExitRecord}
           />
         </section>
       </main>
@@ -383,6 +413,7 @@ export default function App() {
           setIsTestMode(testMode);
           setIsSetupOpen(false);
         }}
+        onReset={handleFullReset}
         initialKey={apiKey}
         initialTestMode={isTestMode}
         isMandatory={!apiKey && !process.env.GEMINI_API_KEY && !isTestMode}
