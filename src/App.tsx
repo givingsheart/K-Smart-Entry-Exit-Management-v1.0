@@ -10,6 +10,7 @@ import {
   LayoutDashboard, 
   BellRing,
   Smartphone,
+  Camera,
   ChevronRight,
   ClipboardList,
   History,
@@ -61,6 +62,7 @@ export default function App() {
   const [isResManagerOpen, setIsResManagerOpen] = useState(false);
   const [isSetupOpen, setIsSetupOpen] = useState(false);
   const [isManualEntryOpen, setIsManualEntryOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   
   const [editingRecord, setEditingRecord] = useState<EntryRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -171,6 +173,7 @@ export default function App() {
     });
 
     setIsScanning(false);
+    setIsScannerOpen(false);
   }, [reservations]);
 
   const handleSaveRecord = (id: string, updates: Partial<EntryRecord>) => {
@@ -326,27 +329,37 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        <section className="flex flex-col gap-8">
-          {/* Scanning Section - Larger for mobile visibility */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between px-2">
-              <h2 className="text-xl font-black text-white flex items-center gap-3">
-                <Smartphone className="w-6 h-6 text-blue-500" />
-                번호판 촬영 인식
-              </h2>
-            </div>
-            <div className="w-full">
-              <Scanner onScan={handleScan} isProcessing={isScanning} apiKey={apiKey} isTestMode={isTestMode} />
-            </div>
+        <section className="flex flex-col gap-6">
+          {/* Scanning Section Trigger */}
+          <div className="px-2">
+            <button 
+              onClick={() => setIsScannerOpen(true)}
+              className="w-full relative overflow-hidden group active:scale-95 transition-all"
+            >
+              <div className="bg-blue-600 rounded-[2.5rem] p-8 border-4 border-blue-400 shadow-[0_20px_50px_rgba(37,99,235,0.3)] flex flex-col items-center gap-4">
+                <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md mb-2">
+                   <Camera className="w-10 h-10 text-white" />
+                </div>
+                <div className="text-center">
+                  <h2 className="text-3xl font-black text-white italic tracking-tighter leading-none mb-2">AI 번호판 자동 인식</h2>
+                  <p className="text-blue-100 text-sm font-bold uppercase tracking-widest opacity-80">Tap to start smart scanning</p>
+                </div>
+              </div>
+              <motion.div 
+                animate={{ left: ['-100%', '200%'] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                className="absolute top-0 bottom-0 w-32 bg-white/10 skew-x-[30deg] pointer-events-none"
+              />
+            </button>
           </div>
 
-          {/* Manual Entry First */}
+          {/* Manual Entry */}
           <div className="px-2">
             <button 
               onClick={() => setIsManualEntryOpen(true)}
-              className="w-full flex items-center justify-center gap-4 bg-zinc-800 hover:bg-zinc-700 py-6 rounded-[1.5rem] transition-all active:scale-95 group border border-white/5 shadow-lg"
+              className="w-full flex items-center justify-center gap-4 bg-zinc-900 hover:bg-zinc-800 py-6 rounded-[1.5rem] transition-all active:scale-95 group border border-white/5 shadow-lg"
             >
-              <Settings className="w-6 h-6 text-zinc-500 group-hover:rotate-90 transition-transform duration-500" />
+              <Smartphone className="w-6 h-6 text-zinc-500 group-hover:rotate-12 transition-transform" />
               <span className="text-lg font-black text-zinc-300">수동 번호 입력</span>
             </button>
           </div>
@@ -436,6 +449,7 @@ export default function App() {
         onClose={() => setIsResManagerOpen(false)}
         onUpdate={(updated) => setReservations(updated)}
         apiKey={apiKey}
+        isTestMode={isTestMode}
       />
 
       <SetupModal
@@ -465,6 +479,25 @@ export default function App() {
         onClose={() => setConfirmConfig({ ...confirmConfig, isOpen: false })}
         isDanger={confirmConfig.isDanger}
       />
+
+      <AnimatePresence>
+        {isScannerOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black"
+          >
+            <Scanner 
+              onScan={handleScan} 
+              isProcessing={isScanning} 
+              apiKey={apiKey} 
+              isTestMode={isTestMode} 
+              onClose={() => setIsScannerOpen(false)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

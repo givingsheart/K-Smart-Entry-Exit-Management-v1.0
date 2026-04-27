@@ -11,10 +11,8 @@ let aiInstance: GoogleGenAI | null = null;
 function getAI(apiKey?: string) {
   const key = apiKey || process.env.GEMINI_API_KEY;
   if (!key) return null;
-  if (!aiInstance) {
-    aiInstance = new GoogleGenAI({ apiKey: key });
-  }
-  return aiInstance;
+  // @google/genai SDK 사양에 맞춰 초기화
+  return new GoogleGenAI({ apiKey: key });
 }
 
 /**
@@ -23,56 +21,40 @@ function getAI(apiKey?: string) {
 export async function extractReservationsFromImages(base64Images: string[], apiKey?: string): Promise<Reservation[]> {
   const ai = getAI(apiKey);
   if (!ai) return [];
-  const prompt = `
-    다음은 자동차 서비스센터의 예약 명단 종이 사진입니다.
-    사진에서 차량번호(예: 123가4567, 12가3456 등)와 예약 시간(예: 08:30, 09:00 등)을 모두 추출해 주세요.
-    결과는 반드시 JSON 배열 형태로 응답해 주세요.
-    중복된 차량번호는 하나만 포함해 주세요.
-  `;
-
-  const contents = {
-    parts: [
-      ...base64Images.map(img => ({
-        inlineData: {
-          mimeType: "image/jpeg",
-          data: img.split(',')[1] || img
-        }
-      })),
-      { text: prompt }
-    ]
-  };
+  
+  const prompt = `당신은 자동차 서비스 센터의 운영 전문가입니다. 첨부된 사진 속에서 '차량번호'와 '예약시간'을 찾아 JSON 배열로 응답하세요. (예: [{"plateNumber": "123가4567", "reservationTime": "09:30"}]) 다른 설명 없이 결과만 반환하세요.`;
 
   try {
+    const contents = {
+      parts: [
+        ...base64Images.map(img => ({
+          inlineData: {
+            mimeType: "image/jpeg",
+            data: img.split(',')[1] || img
+          }
+        })),
+        { text: prompt }
+      ]
+    };
+
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              plateNumber: { type: Type.STRING, description: "차량번호" },
-              reservationTime: { type: Type.STRING, description: "예약시간" }
-            },
-            required: ["plateNumber"]
-          }
-        }
-      }
+      contents
     });
 
-    const jsonStr = response.text?.trim() || "[]";
-    const reservations: any[] = JSON.parse(jsonStr);
+    const text = response.text?.trim() || "[]";
+    const jsonMatch = text.match(/\[.*\]/s);
+    const jsonStr = jsonMatch ? jsonMatch[0] : "[]";
+    const extractedData: any[] = JSON.parse(jsonStr);
     
-    return reservations.map((res, index) => ({
+    return extractedData.map((res, index) => ({
       id: `res-${Date.now()}-${index}`,
-      plateNumber: res.plateNumber.replace(/\s/g, ''),
-      reservationTime: res.reservationTime
-    }));
-  } catch (error) {
-    console.error("Gemini Extraction Error:", error);
-    return [];
+      plateNumber: res.plateNumber?.toString().replace(/\s/g, '') || "",
+      reservationTime: res.reservationTime?.toString() || ""
+    })).filter(r => r.plateNumber.length > 0);
+  } catch (error: any) {
+    console.error("Gemini 명단 추출 오류:", error);
+    throw error;
   }
 }
 
@@ -84,35 +66,31 @@ export async function recognizeLicensePlate(base64Image: string, apiKey?: string
   const ai = getAI(apiKey);
   if (!ai) return null;
   
-  // 프롬프트를 극도로 단순화하여 응답 속도를 높입니다.
-  const prompt = "이미지에서 차량 번호만 추출하세요. 결과만 반환: (예: 123가4567)";
+  const prompt = "이미지 속의 차량 번호판 문자와 숫자를 모두 읽어주세요. 다른 설명 없이 번호만 출력하세요 (예: 123가4567).";
   
-  const contents = {
-    parts: [
-      {
-        inlineData: {
-          mimeType: "image/jpeg",
-          data: base64Image.split(',')[1] || base64Image
-        }
-      },
-      { text: prompt }
-    ]
-  };
-
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              mimeType: "image/jpeg",
+              data: base64Image.split(',')[1] || base64Image
+            }
+          },
+          { text: prompt }
+        ]
+      }
     });
 
     const plate = response.text?.trim() || null;
     if (plate) {
-      // Basic normalization
       return plate.replace(/[^0-9가-힣]/g, '');
     }
     return null;
   } catch (error) {
-    console.error("Gemini Recognition Error:", error);
+    console.error("Gemini 번호 인식 오류:", error);
     return null;
   }
 }
