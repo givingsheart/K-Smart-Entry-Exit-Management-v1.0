@@ -16,10 +16,39 @@ interface Props {
 export default function Scanner({ onScan, isProcessing, apiKey, isTestMode, onClose }: Props) {
   const webcamRef = useRef<Webcam>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [zoom, setZoom] = useState(1);
+  const [maxZoom, setMaxZoom] = useState(1);
+  const [hasZoomSupport, setHasZoomSupport] = useState(false);
 
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [recognizedPlate, setRecognizedPlate] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Initialize camera and check for zoom capabilities
+  const handleUserMedia = useCallback((stream: MediaStream) => {
+    const track = stream.getVideoTracks()[0];
+    if (track) {
+      const capabilities = (track as any).getCapabilities?.() || {};
+      if (capabilities.zoom) {
+        setHasZoomSupport(true);
+        setMaxZoom(capabilities.zoom.max || 1);
+        setZoom(capabilities.zoom.min || 1);
+      }
+    }
+  }, []);
+
+  const handleZoomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    setZoom(value);
+    if (webcamRef.current) {
+      const track = (webcamRef.current.video?.srcObject as MediaStream)?.getVideoTracks()[0];
+      if (track) {
+        (track as any).applyConstraints({
+          advanced: [{ zoom: value }]
+        }).catch((err: any) => console.error("Zoom apply error:", err));
+      }
+    }
+  };
 
   const processImage = async (imageSrc: string) => {
     setIsAnalyzing(true);
@@ -82,9 +111,9 @@ export default function Scanner({ onScan, isProcessing, apiKey, isTestMode, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black flex flex-col h-[100dvh] overflow-hidden">
       {/* Header */}
-      <div className="absolute top-0 inset-x-0 z-10 p-4 flex justify-between items-center bg-gradient-to-b from-black/60 to-transparent">
+      <div className="absolute top-0 inset-x-0 z-30 p-4 pt-6 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">
         <button 
           onClick={onClose} 
           className="p-2 bg-white/10 rounded-full backdrop-blur-md hover:bg-white/20 transition-colors"
@@ -111,7 +140,7 @@ export default function Scanner({ onScan, isProcessing, apiKey, isTestMode, onCl
               disablePictureInPicture={true}
               forceScreenshotSourceSize={false}
               imageSmoothing={true}
-              onUserMedia={() => {}}
+              onUserMedia={handleUserMedia}
               onUserMediaError={() => {}}
               videoConstraints={{
                 facingMode: "environment",
@@ -120,10 +149,31 @@ export default function Scanner({ onScan, isProcessing, apiKey, isTestMode, onCl
               }}
               className="w-full h-full object-cover"
             />
+
+            {/* Zoom Slider Overlay */}
+            {hasZoomSupport && maxZoom > 1 && (
+              <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col items-center gap-4 py-6 px-3 bg-black/40 backdrop-blur-md rounded-full border border-white/10 z-20">
+                <span className="text-[10px] text-white font-bold opacity-60">Zoom</span>
+                <input
+                  type="range"
+                  min="1"
+                  max={maxZoom}
+                  step="0.1"
+                  value={zoom}
+                  onChange={handleZoomChange}
+                  className="h-40 accent-blue-500 [appearance:slider-vertical] cursor-pointer"
+                  style={{ transform: 'rotate(180deg)' }}
+                />
+                <span className="text-[10px] text-white font-mono font-bold bg-blue-600 px-2 py-1 rounded-md">{zoom.toFixed(1)}x</span>
+              </div>
+            )}
             
             {/* 가이드 오버레이 (심미적 용도 + 추천 영역) */}
             <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-              <div className="w-4/5 h-[35%] border-2 border-white/30 rounded-3xl relative">
+              <motion.div 
+                animate={{ scale: 1 + (zoom - 1) * 0.05 }}
+                className="w-4/5 h-[35%] border-2 border-white/30 rounded-3xl relative"
+              >
                 <div className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-blue-500" />
                 <div className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-blue-500" />
                 <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-blue-500" />
@@ -132,7 +182,7 @@ export default function Scanner({ onScan, isProcessing, apiKey, isTestMode, onCl
                 <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-center">
                    <Scan className="w-12 h-12 text-white/20" />
                 </div>
-              </div>
+              </motion.div>
               <p className="mt-6 text-white/40 text-xs font-bold uppercase tracking-widest bg-black/40 px-4 py-2 rounded-full backdrop-blur-md border border-white/5">
                 번호판을 중앙에 맞춰주세요
               </p>
@@ -214,9 +264,14 @@ export default function Scanner({ onScan, isProcessing, apiKey, isTestMode, onCl
         </AnimatePresence>
       </div>
 
-      {/* Main Controls (Only visible before result) */}
+      {/* Main Controls (Fixed at bottom) */}
       {!recognizedPlate && !isAnalyzing && (
-        <div className="bg-zinc-950 p-8 pb-12 flex items-center justify-evenly">
+        <div className="bg-zinc-950 p-6 pb-SAFE flex items-center justify-evenly border-t border-white/5 z-30">
+          <style>{`
+            .pb-SAFE {
+              padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+            }
+          `}</style>
           {/* Native Camera Trigger */}
           <button 
             onClick={() => fileInputRef.current?.click()}
